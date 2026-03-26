@@ -102,6 +102,16 @@ function restoreSocialLoginConfig() {
 
   DSIT="../sites/${ERPNEXT_SITE_URL}"
   PRIVATES="${DSIT}/private/files"
+
+  # bench restore --with-private-files overwrites private/files, removing any pre-placed apikey.sh
+  # Re-create it from KEYS env var (set by envars.sh) so restoreSocialLoginConfig can proceed (#31)
+  if [[ ! -f "${PRIVATES}/apikey.sh" ]] && [[ -n "${KEYS:-}" ]]; then
+    mkdir -p "${PRIVATES}"
+    echo "export KEYS=\"${KEYS}\"" > "${PRIVATES}/apikey.sh"
+    chmod 600 "${PRIVATES}/apikey.sh"
+    echo -e "  Re-created apikey.sh from KEYS env var (overwritten by bench restore)"
+  fi
+
   source ${PRIVATES}/apikey.sh;
   # echo -e ${KEYS}
   RESOURCE_URL="https://${ERPNEXT_SITE_URL}/api/resource";
