@@ -1,0 +1,85 @@
+echo -e "***  THIS IS NOT AN EXECUTABLE FILE  ***";
+exit;
+
+# 1) Stop ERPNext on master and slave
+# Master    admin@erpls:
+cd ~/frappe-bench-ERPLS; # dbch
+spvstp;
+
+# Slave     adm@iriblu:
+cd ~/frappe-bench-IRIBLU; # dbch
+spvstp;
+
+# 2) Full backup of master ::
+cd ~/frappe-bench-ERPLS/apps/ce_sri/development/initialization; # cedi    
+./qikBackup.sh "Restarting replication"
+
+# 3) Push to slave ::
+cd ~/frappe-bench-ERPLS/BKP; # dbchd
+export backup=$(cat BACKUP.txt)
+echo ${backup}
+scp NotesForBackups.txt BACKUP.txt ${backup} iriblu:~/frappe-bench-IRIBLU/BKP;
+
+# 4) Stop Mariadb slave ::
+# mysql -AD _091b776d72ba8e16; # qmaria
+# STOP SLAVE;
+# flush logs;
+
+qmaria -e "STOP SLAVE;";
+qmaria -e "FLUSH LOGS;";
+
+# 5) Restore backup onto slave ::
+cd /home/adm/frappe-bench-IRIBLU/BaRe; # bare
+./handleRestore.sh
+
+# 6) Get Master Status ::
+#    MariaDB [_091b776d72ba8e16]> SHOW MASTER STATUS\G
+#    *************************** 1. row ***************************
+#                File: mariadb-bin.000059
+#            Position: 8947703
+#        Binlog_Do_DB: _091b776d72ba8e16
+#    Binlog_Ignore_DB: 
+#    1 row in set (0.001 sec)
+
+echo -e "export MASTER_POSITION=$(qmaria -e "SHOW MASTER STATUS\G" | grep Position | cut -d ":" -f 2 | xargs);";
+echo -e "export MASTER_FILE=$(qmaria -e "SHOW MASTER STATUS\G" | grep File | cut -d ":" -f 2 | xargs);";
+echo -e "export MASTER_PASSWORD=$(${HOME}/.ssh/.supwd.sh)";
+
+
+# 7) Restart slave replication ::
+# Paste export statements into slave shell terminal;
+#
+#    MariaDB [_091b776d72ba8e16]> CHANGE MASTER TO MASTER_LOG_FILE='mariadb-bin.000061', MASTER_LOG_POS=532, MASTER_USER='iriblu', MASTER_PASSWORD='*******';
+#    Query OK, 0 rows affected (0.011 sec)
+#
+#    MariaDB [_091b776d72ba8e16]> START SLAVE;
+#    Query OK, 0 rows affected (0.006 sec)
+#
+#    MariaDB [_091b776d72ba8e16]> SHOW slave STATUS\G
+#    *************************** 1. row ***************************
+#                    Slave_IO_State: Waiting for master to send event
+#                       Master_Host: 154.38.165.118
+#                       Master_User: iriblu
+#                       Master_Port: 3306
+#                     Connect_Retry: 10
+#           :                      :                    :
+#           :                      :                    :
+#           :                      :                    :
+
+# echo -e "CHANGE MASTER TO MASTER_LOG_FILE='${MASTER_FILE}', MASTER_LOG_POS=${MASTER_POSITION}, MASTER_USER='iriblu', MASTER_PASSWORD='${MASTER_PASSWORD}';";
+qmaria -e "CHANGE MASTER TO MASTER_LOG_FILE='${MASTER_FILE}', MASTER_LOG_POS=${MASTER_POSITION}, MASTER_USER='iriblu', MASTER_PASSWORD='${MASTER_PASSWORD}';";
+qmaria -e "START SLAVE;";
+qmaria -e "SHOW slave STATUS\G;";
+
+#  8) Update watchdog on master
+qmaria -e "select * from watchdog;";
+qmaria -e "update watchdog set idx = idx + 1";
+qmaria -e "select * from watchdog;";
+
+#  9) Check watchdog on  slave
+qmaria -e "select * from watchdog;";
+
+# 10) Restart ERPNext on master.      * * * Do NOT restart ERPNext on slave * * *
+     admin@erpls:~/frappe-bench-ERPLS   spvstr;
+     # adm@iriblu:~/frappe-bench-IRIBLU   spvstr;
+
