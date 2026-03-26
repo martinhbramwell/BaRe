@@ -100,7 +100,7 @@ function repackageWithCorrectedSiteName() {
 
 function restoreSocialLoginConfig() {
 
-  DSIT="../sites/${ERPNEXT_SITE_URL}"
+  DSIT="./sites/${ERPNEXT_SITE_URL}"  # relative to bench dir (fixes #33)
   PRIVATES="${DSIT}/private/files"
 
   # bench restore --with-private-files overwrites private/files, removing any pre-placed apikey.sh
