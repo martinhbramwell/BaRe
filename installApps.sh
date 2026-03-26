@@ -48,8 +48,15 @@ echo "  ... migrate done"
 echo ""
 echo "=== Placing ddlViews.sql ==="
 mkdir -p "${PRIVATE_FILES}"
-cp "apps/ce_sri/example_srvr_files/views.ddl" "${PRIVATE_FILES}/ddlViews.sql"
-echo "  ... placed at ${PRIVATE_FILES}/ddlViews.sql"
+if [[ -f "apps/ce_sri/example_srvr_files/views.ddl" ]]; then
+    cp "apps/ce_sri/example_srvr_files/views.ddl" "${PRIVATE_FILES}/ddlViews.sql"
+    echo "  ... placed from apps/ce_sri/example_srvr_files/views.ddl"
+elif [[ -f "${PRIVATE_FILES}/ddlViews.sql" ]]; then
+    echo "  ... ddlViews.sql already present at ${PRIVATE_FILES}/ddlViews.sql (pre-placed by controller)"
+else
+    echo "ERROR: ddlViews.sql not found — pre-place it via the controller provision script" >&2
+    exit 1
+fi
 
 echo ""
 echo "=== installApps.sh complete ==="

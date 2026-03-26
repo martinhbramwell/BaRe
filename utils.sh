@@ -38,7 +38,7 @@ declare PRIVATE_PATH="${SITE_PATH}/private";
 declare BACKUPS_PATH="${PRIVATE_PATH}/backups";
 declare FILES_PATH="${PRIVATE_PATH}/files";
 
-declare TMP_DIR="/dev/shm";
+declare TMP_DIR="/tmp";  # /dev/shm is too small for large SQL archives (#25)
 
 declare BACKUP_DIR="${TARGET_BENCH}/BKP";
 
