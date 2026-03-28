@@ -35,7 +35,12 @@ done
 echo ""
 echo "=== Updating sites/apps.txt ==="
 for app in ce_sri returnable route_planner; do
-    grep -qxF "${app}" "${APPS_TXT}" || echo "${app}" >> "${APPS_TXT}"
+    if ! grep -qxF "${app}" "${APPS_TXT}"; then
+        # bench install-app writes apps.txt without a trailing newline — ensure one exists
+        # before appending or the new app concatenates onto the previous entry (e.g. erpnextce_sri)
+        [ -n "$(tail -c1 "${APPS_TXT}")" ] && echo >> "${APPS_TXT}"
+        echo "${app}" >> "${APPS_TXT}"
+    fi
 done
 echo "  apps.txt: $(tr '\n' ' ' < ${APPS_TXT})"
 
