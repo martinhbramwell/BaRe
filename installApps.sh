@@ -46,7 +46,7 @@ echo "  apps.txt: $(tr '\n' ' ' < ${APPS_TXT})"
 
 echo ""
 echo "=== bench migrate — creating DocTables for new apps (pre-restore) ==="
-bench --site "${SITE}" migrate 2>&1 \
+bench --site "${SITE}" migrate --skip-failing 2>&1 \
     | grep -E "^(Migrating|Executing|Success|Failed|Updating|Building)" | tail -10
 echo "  ... migrate done"
 
