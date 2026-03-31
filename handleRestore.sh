@@ -360,7 +360,7 @@ function restoreDatabase() {
       echo -e "         ... fixed";
 
       echo -e "\n      - Running schema migration (bench migrate)";
-      bench --site ${ERPNEXT_SITE_URL} migrate;
+      bench --site ${ERPNEXT_SITE_URL} migrate --skip-failing 2>&1;
       echo -e "         ... migrated";
 
       if [[ "${RESTORE_SITE_CONFIG}" != "yes" ]]; then
