@@ -348,9 +348,19 @@ function restoreDatabase() {
       bench --site ${ERPNEXT_SITE_URL} --force restore ${PASS} ${FILE} ${PRIV} ${DATA};
       echo -e "         ... restored";
 
-      echo -e "\n      - Running schema migration (bench migrate --skip-failing)";
-      bench --site ${ERPNEXT_SITE_URL} migrate --skip-failing 2>&1 \
-        | grep -E "^(Migrating|Executing|Success|Failed|Updating|Building)" | tail -15;
+      echo -e "\n      - Fixing post-restore migrate blockers";
+      # 1. Remove tabDocField orphans from production Developer Mode edits.
+      #    These collide with ce_sri Custom Field fixtures during bench migrate.
+      mysql -AD ${ACTIVE_DATABASE} -e "DELETE FROM \`tabDocField\` WHERE parent='Customer' AND fieldname='forma_de_pago_preferida';" 2>/dev/null || true;
+      # 2. Seed tabPatch Log with comment-formatted patch string.
+      #    Frappe v13 get_file_items() keeps inline comments from patches.txt;
+      #    the patch handler's 'in' check fails against comment-free DB entries,
+      #    causing the patch to re-run and crash on missing performance_schema tables.
+      mysql -AD ${ACTIVE_DATABASE} -e "INSERT IGNORE INTO \`tabPatch Log\` (name, patch, creation, modified, owner, modified_by) VALUES ('frappe.patches.v12_0.delete_duplicate_indexes  # 2022-12-15', 'frappe.patches.v12_0.delete_duplicate_indexes  # 2022-12-15', NOW(), NOW(), 'Administrator', 'Administrator');" 2>/dev/null || true;
+      echo -e "         ... fixed";
+
+      echo -e "\n      - Running schema migration (bench migrate)";
+      bench --site ${ERPNEXT_SITE_URL} migrate;
       echo -e "         ... migrated";
 
       if [[ "${RESTORE_SITE_CONFIG}" != "yes" ]]; then
