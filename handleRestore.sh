@@ -349,14 +349,19 @@ function restoreDatabase() {
       echo -e "         ... restored";
 
       echo -e "\n      - Fixing post-restore migrate blockers";
-      # 1. Remove tabDocField orphans from production Developer Mode edits.
-      #    These collide with ce_sri Custom Field fixtures during bench migrate.
-      mysql -AD ${ACTIVE_DATABASE} -e "DELETE FROM \`tabDocField\` WHERE parent='Customer' AND fieldname='forma_de_pago_preferida';" 2>/dev/null || true;
-      # 2. Seed tabPatch Log with comment-formatted patch string.
-      #    Frappe v13 get_file_items() keeps inline comments from patches.txt;
-      #    the patch handler's 'in' check fails against comment-free DB entries,
-      #    causing the patch to re-run and crash on missing performance_schema tables.
-      mysql -AD ${ACTIVE_DATABASE} -e "INSERT IGNORE INTO \`tabPatch Log\` (name, patch, creation, modified, owner, modified_by) VALUES ('frappe.patches.v12_0.delete_duplicate_indexes  # 2022-12-15', 'frappe.patches.v12_0.delete_duplicate_indexes  # 2022-12-15', NOW(), NOW(), 'Administrator', 'Administrator');" 2>/dev/null || true;
+      # Delegate to ESACP cleanup scripts if available (SCP'd to /tmp/vm_scripts/
+      # during provision/refresh). These handle all fixture Custom Fields and patch
+      # log entries dynamically — no hardcoded field lists to maintain.
+      if [[ -f /tmp/vm_scripts/g1_seed_patch_log.py ]]; then
+        echo -e "        Running g1_seed_patch_log.py ...";
+        python3 /tmp/vm_scripts/g1_seed_patch_log.py \
+          --bench-dir "${TARGET_BENCH}" --site "${ERPNEXT_SITE_URL}";
+      fi
+      if [[ -f /tmp/vm_scripts/g2_clear_fixture_custom_fields.py ]]; then
+        echo -e "        Running g2_clear_fixture_custom_fields.py ...";
+        python3 /tmp/vm_scripts/g2_clear_fixture_custom_fields.py \
+          --bench-dir "${TARGET_BENCH}" --site "${ERPNEXT_SITE_URL}";
+      fi
       echo -e "         ... fixed";
 
       echo -e "\n      - Running schema migration (bench migrate)";
