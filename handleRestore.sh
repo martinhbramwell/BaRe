@@ -370,15 +370,23 @@ function restoreDatabase() {
 
       if [[ "${RESTORE_SITE_CONFIG}" != "yes" ]]; then
         echo -e "\n      - Clearing Social Login Keys (lab: site_config retained, encryption_key mismatch)";
-        mysql -AD ${ACTIVE_DATABASE} -e "DELETE FROM \`tabSocial Login Key\`;" 2>/dev/null || true;
+        mysql -u root -p"${MYPWD}" -D ${ACTIVE_DATABASE} -e "DELETE FROM \`tabSocial Login Key\`;" 2>/dev/null || true;
         echo -e "         ... cleared";
       fi;
 
       pushd ./sites/${ERPNEXT_SITE_URL}/private/files >/dev/null;
-        echo -e "\n      - Restoring database views (with DB name substitution)";
-        echo -e "${pDFLT}         started ...";
-        sed "s/_[0-9a-f]\{16\}/${ACTIVE_DATABASE}/g" ./ddlViews.sql | mysql -AD ${ACTIVE_DATABASE};
-        echo -e "         ... restored";
+        if [[ -f ./ddlViews.sql ]]; then
+          echo -e "\n      - Restoring database views (with DB name substitution)";
+          echo -e "${pDFLT}         started ...";
+          if sed "s/_[0-9a-f]\{16\}/${ACTIVE_DATABASE}/g" ./ddlViews.sql | mysql -u root -p"${MYPWD}" -D ${ACTIVE_DATABASE}; then
+            echo -e "         ... restored";
+          else
+            echo -e "  ${pRED}[ERROR] Failed to apply ddlViews.sql to ${ACTIVE_DATABASE}${pDFLT}";
+            exit 1;
+          fi;
+        else
+          echo -e "\n      - [SKIP] ddlViews.sql not found — no views to restore";
+        fi;
       popd >/dev/null;
 
 
