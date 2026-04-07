@@ -420,7 +420,7 @@ if [[ ${SCRIPT_NAME} = ${THIS_SCRIPT} ]] ; then
     echo -e "\n      - Restoring database ${pRED}*** SKIPPED ***${pDFLT}";
   fi;
 
-  if [[ 1 == 0 ]]; then
+  if [[ 1 == 1 ]]; then
     echo -e "\n      - Restarting ERPNext${pFAINT_BLUE}";
     sudo -A supervisorctl start all;
     echo -e "${pDFLT}            restarted";
@@ -431,12 +431,12 @@ if [[ ${SCRIPT_NAME} = ${THIS_SCRIPT} ]] ; then
     echo -e "\n      - Restarting ERPNext ${pRED}*** SKIPPED ***${pDFLT}";
   fi;
 
-  if [[ 1 == 1 ]]; then
+  if [[ 1 == 1 ]] && [[ "${DEFER_SOCIAL_LOGIN:-0}" != "1" ]]; then
     echo -e "\n - Restoring Social Login ...";
     restoreSocialLoginConfig;
     echo -e "${pDFLT}  social logins restored";
   else
-    echo -e "\n      - Restoring Social Login ${pRED}*** SKIPPED ***${pDFLT}";
+    echo -e "\n      - Restoring Social Login ${pRED}*** DEFERRED to post-H4a ***${pDFLT}";
   fi;
 
 
