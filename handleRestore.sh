@@ -365,12 +365,15 @@ function restoreDatabase() {
       echo -e "         ... fixed";
 
       echo -e "\n      - Running schema migration (bench migrate)";
-      bench --site ${ERPNEXT_SITE_URL} migrate --skip-failing 2>&1;
+      bench --site ${ERPNEXT_SITE_URL} migrate 2>&1;
       echo -e "         ... migrated";
 
       if [[ "${RESTORE_SITE_CONFIG}" != "yes" ]]; then
         echo -e "\n      - Clearing Social Login Keys (lab: site_config retained, encryption_key mismatch)";
-        mysql -u root -p"${MYPWD}" -D ${ACTIVE_DATABASE} -e "DELETE FROM \`tabSocial Login Key\`;" 2>/dev/null || true;
+        if ! mysql -u root -p"${MYPWD}" -D ${ACTIVE_DATABASE} -e "DELETE FROM \`tabSocial Login Key\`;"; then
+          echo -e "  ${pRED}[ERROR] Failed to clear Social Login Keys from ${ACTIVE_DATABASE}${pDFLT}";
+          exit 1;
+        fi;
         echo -e "         ... cleared";
       fi;
 
