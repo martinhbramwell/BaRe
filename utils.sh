@@ -17,16 +17,16 @@ export pBG_YLO="\033[1;43;33m";
 export ENVARS="envars.sh";
 export ENVIRONMENT_VARIABLES="${CURR_SCRIPT_DIR}/${ENVARS}";
 
-if [[ -L ${ENVIRONMENT_VARIABLES} ]]; then
+if [[ -L ${ENVIRONMENT_VARIABLES} || -f ${ENVIRONMENT_VARIABLES} ]]; then
   if [[ -e ${ENVIRONMENT_VARIABLES} ]]; then
     echo -e "\n\n${pGREEN}Loading environment variables from '${ENVIRONMENT_VARIABLES}'${pDFLT}";
     source ${ENVIRONMENT_VARIABLES};
-  else 
-    echo -e "${pRED} The local symlink '${ENVIRONMENT_VARIABLES}' to a file of environment variables is broken. Cannot proceed.${pDFLT}";
+  else
+    echo -e "${pRED} The symlink '${ENVIRONMENT_VARIABLES}' to a file of environment variables is broken. Cannot proceed.${pDFLT}";
     exit 1;
   fi;
-else 
-  echo -e "${pRED} A required symlink '${ENVIRONMENT_VARIABLES}' to a file of environment variables was not found. Cannot proceed.${pDFLT}";
+else
+  echo -e "${pRED} The required env-var file '${ENVIRONMENT_VARIABLES}' was not found (expected a real file or symlink). Cannot proceed.${pDFLT}";
   exit 1;
 fi;
 
